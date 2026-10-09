@@ -5,7 +5,7 @@ MegaGames, running on a Sega Mega Drive / Genesis with the 32X and the
 Sega CD. Based on OpenTyrian. All four episodes, CD music, sound effects
 on the Sega CD's PCM chip, mouse support and two-player link-cable play.
 
-Release: OpenTyrian Sega 32X CD, October 2026 (build T3k).
+Release: OpenTyrian Sega 32XCD, October 2026 (build T3k).
 This source: branch `two-sh2`, October 2026 (both SH2s drawing, PCM
 effects, partial screen redraw).
 
@@ -24,9 +24,7 @@ input and the cartridge/CD hardware.
 - an emulator: nothing of the PC version runs under emulation, the C code
   is compiled for the SH2;
 - a CD-only game: it boots from a 32X cartridge and uses the Sega CD for
-  the level files, the story texts, the music and the sound effects. A
-  CD-boot version for the CD32X (Sega CD + 32X + RAM cart) exists as an
-  experiment (`CD32X=1`), not as the main build;
+  the level files, the story texts, the music and the sound effects.
 - a 60 fps game: the 32X frame buffer is slow, and Tyrian redraws a full
   256-colour screen; it runs at 20 to 30 frames per second.
 
@@ -34,8 +32,7 @@ input and the cartridge/CD hardware.
 ## What you need
 
 - A Mega Drive / Genesis with a **32X** and a **Sega CD** (or an emulator
-  that runs a 32X cartridge together with a Sega CD image, such as Fusion
-  or ares).
+  that runs a 32X cartridge together with a Sega CD image, such as ARES).
 - The cartridge ROM: `TYRIAN32X.32x`
 - The disc image: `TYRIAN32X_CD.cue` + `TYRIAN32X_CD.bin`
   (always load the `.cue`)
