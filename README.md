@@ -139,8 +139,10 @@ screen.
 - **Python 3** (the ROM file system, the cartridge image and the disc
   image are built by scripts in `tools/`).
 - A **PC C compiler** (gcc) for the music renderer and the PC test build.
-- **genisoimage**, only for the boot disc (`CD32X=1`); the Sega CD boot block
-  `bootblocks/US_BOOT.BIN` comes with the Sega toolchain.
+- **genisoimage**, only for the experimental CD-boot disc (`CD32X=1`), with the
+  Sega CD boot block `bootblocks/US_BOOT.BIN` from the Sega toolchain. The
+  normal disc (cartridge + Sega CD, below) is written by `tools/make_tyrian_cd.py`
+  alone.
 
 Included or fetched by the build (nothing else to put next to the project):
 
@@ -152,9 +154,9 @@ Included or fetched by the build (nothing else to put next to the project):
   of `tyrian21.zip`, with its own `license.doc` and `file_id.diz`) are in `data/`.
   `tools/get_data.sh` fetches them again from the freeware release (SHA-256
   checked) if `data/` is ever emptied; `build.sh` runs it then.
-- **The music** for the boot disc: `build.sh CD32X=1` renders the 41 songs
-  from `data/music.mus` into `music_tracks/` the first time (about 20 s; the
-  same tracks byte for byte every time).
+- **The music**: the 41 CD tracks are rendered from `data/music.mus` by
+  `tools/render_music` (the commands below, about 20 s; the same tracks byte for
+  byte every time). `CD32X=1` renders them itself if `music_tracks/` is missing.
 
 ### Commands
 
