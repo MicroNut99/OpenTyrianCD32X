@@ -39,6 +39,11 @@ for a in "$@"; do
     *) DATA="$a" ;;
   esac
 done
+# No data yet (a fresh clone): fetch the Tyrian 2.1 freeware data into data/ first.
+if [ "$DATA" = "$HERE/data" ] && [ ! -f "$DATA/tyrian.shp" ] && [ ! -f "$DATA/TYRIAN.SHP" ]; then
+  echo "==> Tyrian 2.1 data (tools/get_data.sh)"
+  bash "$HERE/tools/get_data.sh"
+fi
 [ -f "$DATA/tyrian.shp" ] || [ -f "$DATA/TYRIAN.SHP" ] || {
   echo "*** Tyrian data not found in $DATA"; echo "    usage: ./build.sh [tyrian data folder] [--with-lvl] [--no-sound]"; exit 1; }
 
@@ -197,8 +202,11 @@ if [ -x "$OBJDUMP" ] && [ -f "$HERE/port/mars/obj/game/backgrnd.o" ]; then
 fi   # JOBS=4 ./build.sh on a Linux drive
 
 echo "==> 68000 (cart/cart_md.s from Kobo, unchanged)"
-D32="$HERE/../d32xr-v33/src-md"
-[ -f "$D32/cd/cd.bin" ] || { echo "*** $D32/cd/cd.bin missing - build d32xr-v33 once (make) first"; exit 1; }
+# D32XR's 68000 pieces (Victor Luchits' Doom 32X Resurrection v33, src-md): kos.s, scd.c and
+# the Sega CD Sub-CPU program cd/ (source + the prebuilt cd.bin) are in third_party/d32xr.
+# D32XR=<path to a d32xr src-md folder> ./build.sh uses another copy instead.
+D32="${D32XR:-$HERE/third_party/d32xr/src-md}"
+[ -f "$D32/cd/cd.bin" ] || { echo "*** $D32/cd/cd.bin missing"; exit 1; }
 cd "$HERE/cart"
 # SAVES (default on): D32XR's Sub-CPU program with two backup-RAM commands
 # (tools/patch_cd_sub.py builds a patched copy in build/cd_sub; your d32xr
@@ -235,9 +243,19 @@ if [ "$CD32X" = "1" ]; then
   PAK_LEN=$(python3 -c "import os; print(0x60000 + os.path.getsize('$HERE/build/romfs.bin'))")
   head -c "$PAK_LEN" "$HERE/TYRIAN32X.32x" > "$HERE/build/TYRIAN.PAK"
   if [ "$PAK_LEN" -gt 4128768 ]; then echo "*** TYRIAN.PAK is $PAK_LEN bytes: more than the cart's 0x3F0000"; exit 1; fi
-  MUSIC="$HERE/music_tracks"
-  [ -f "$MUSIC/track02.wav" ] || MUSIC="$HERE/../tyrian32x/music_tracks"
-  [ -f "$MUSIC/track42.wav" ] || { echo "*** music tracks not found (track02..42.wav in $HERE/music_tracks or ../tyrian32x/music_tracks)"; exit 1; }
+  # The 41 songs as CD tracks: rendered once from data/music.mus by tools/render_music
+  # (the same tracks byte for byte every time, ~20 s), kept in music_tracks/.
+  MUSIC="${MUSIC:-$HERE/music_tracks}"
+  if [ ! -f "$MUSIC/track02.wav" ] || [ ! -f "$MUSIC/track42.wav" ]; then
+    echo "==> music tracks (tools/render_music, once)"
+    bash "$HERE/tools/render_music/build.sh"
+    mkdir -p "$MUSIC"
+    "$HERE/tools/render_music/render_music" "$DATA/music.mus" "$MUSIC" --gain 2.5 | tail -1
+  fi
+  [ -f "$MUSIC/track42.wav" ] || { echo "*** music tracks not found in $MUSIC"; exit 1; }
+  # what the disc build needs besides the toolchain's compilers
+  [ -f "$TOOLCHAIN/bootblocks/US_BOOT.BIN" ] || { echo "*** $TOOLCHAIN/bootblocks/US_BOOT.BIN missing (Sega CD boot block, part of the Sega toolchain)"; exit 1; }
+  command -v genisoimage >/dev/null || { echo "*** genisoimage missing (sudo apt install genisoimage)"; exit 1; }
   echo "    TYRIAN.PAK $PAK_LEN bytes, music from $MUSIC"
   rm -rf "$HERE/cd32x/build"
   make -C "$HERE/cd32x" PAK="$HERE/build/TYRIAN.PAK" MUSIC="$MUSIC" ROUND="${ROUND:-R1}"

@@ -13,9 +13,10 @@ ROOTDIR = /opt/toolchains/sega
 endif
 M68K     = $(ROOTDIR)/m68k-elf/bin/m68k-elf-
 SH       = $(ROOTDIR)/sh-elf/bin/sh-elf-
-LDSCRIPTSDIR = $(ROOTDIR)/ldscripts
+# kobo/cd.ld: the toolchain's ldscripts/cd.ld, kept here (identical)
+LDSCRIPTSDIR = kobo
 BOOTBLOCK    = $(ROOTDIR)/bootblocks/US_BOOT.BIN
-LIBPATH  = -L$(ROOTDIR)/m68k-elf/lib -L$(ROOTDIR)/m68k-elf/lib/gcc/m68k-elf/4.6.2 -L$(ROOTDIR)/m68k-elf/m68k-elf/lib
+LIBPATH  = -L$(ROOTDIR)/m68k-elf/lib -L$(ROOTDIR)/m68k-elf/m68k-elf/lib
 INCPATH  = -I. -Ikobo -I$(ROOTDIR)/m68k-elf/include -I$(ROOTDIR)/m68k-elf/m68k-elf/include
 CCFLAGS  = -m68000 -Wall -Ofast -c -fomit-frame-pointer
 HWFLAGS  = -m68000 -Wall -O1 -c -fomit-frame-pointer

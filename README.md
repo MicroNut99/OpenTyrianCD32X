@@ -139,11 +139,22 @@ screen.
 - **Python 3** (the ROM file system, the cartridge image and the disc
   image are built by scripts in `tools/`).
 - A **PC C compiler** (gcc) for the music renderer and the PC test build.
-- **D32XR's sources** (Victor Luchits' Doom 32X Resurrection) next to the
-  project folder as `../d32xr-v33`, built once with `make`: the build takes
-  its Sega CD Sub-CPU program and Sega CD code from there.
-- **The Tyrian 2.1 data files** (the freeware release) in `data/`. They
-  are not part of this source.
+- **genisoimage**, only for the boot disc (`CD32X=1`); the Sega CD boot block
+  `bootblocks/US_BOOT.BIN` comes with the Sega toolchain.
+
+Included or fetched by the build (nothing else to put next to the project):
+
+- **D32XR's 68000 pieces** (Victor Luchits' Doom 32X Resurrection v33,
+  `src-md`): `kos.s`, `scd.c` and the Sega CD Sub-CPU program `cd/` (source and
+  the prebuilt `cd.bin`) are in `third_party/d32xr/`. `D32XR=<src-md folder>`
+  uses another copy.
+- **The Tyrian 2.1 data files** (the freeware release) go in `data/`. They are
+  not part of this source: `build.sh` runs `tools/get_data.sh` when `data/` is
+  empty, which downloads `tyrian21.zip`, checks its SHA-256 and unpacks it
+  (or `tools/get_data.sh path/to/tyrian21.zip`).
+- **The music** for the boot disc: `build.sh CD32X=1` renders the 41 songs
+  from `data/music.mus` into `music_tracks/` the first time (about 20 s; the
+  same tracks byte for byte every time).
 
 ### Commands
 
