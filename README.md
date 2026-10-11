@@ -148,10 +148,10 @@ Included or fetched by the build (nothing else to put next to the project):
   `src-md`): `kos.s`, `scd.c` and the Sega CD Sub-CPU program `cd/` (source and
   the prebuilt `cd.bin`) are in `third_party/d32xr/`. `D32XR=<src-md folder>`
   uses another copy.
-- **The Tyrian 2.1 data files** (the freeware release) go in `data/`. They are
-  not part of this source: `build.sh` runs `tools/get_data.sh` when `data/` is
-  empty, which downloads `tyrian21.zip`, checks its SHA-256 and unpacks it
-  (or `tools/get_data.sh path/to/tyrian21.zip`).
+- **The Tyrian 2.1 data files** (the freeware release, unchanged: the contents
+  of `tyrian21.zip`, with its own `license.doc` and `file_id.diz`) are in `data/`.
+  `tools/get_data.sh` fetches them again from the freeware release (SHA-256
+  checked) if `data/` is ever emptied; `build.sh` runs it then.
 - **The music** for the boot disc: `build.sh CD32X=1` renders the 41 songs
   from `data/music.mus` into `music_tracks/` the first time (about 20 s; the
   same tracks byte for byte every time).
