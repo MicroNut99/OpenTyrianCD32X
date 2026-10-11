@@ -135,7 +135,7 @@ screen.
   copying to `/mnt/...` can make old object files look new).
 - **The Sega toolchain**, GCC 12.1: `sh-elf` for the SH2s (with newlib),
   `m68k-elf` for the 68000 and the Sega CD's Sub-CPU, installed under
-  `/opt/toolchains/sega`.
+  `/opt/toolchains/sega` (or anywhere else, with `GENDEV` set to that folder).
 - **Python 3** (the ROM file system, the cartridge image and the disc
   image are built by scripts in `tools/`).
 - A **PC C compiler** (gcc) for the music renderer and the PC test build.

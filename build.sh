@@ -26,7 +26,10 @@ trap 'echo; echo "**************************************************************
       echo "*** build.sh line $LINENO: $BASH_COMMAND"; \
       echo "*** Please send the last 40 lines of this output."; \
       echo "******************************************************************"' ERR
-TC68=/opt/toolchains/sega/m68k-elf/bin/m68k-elf-
+# The Sega toolchain: /opt/toolchains/sega, or $GENDEV if set (the same rule as
+# port/mars/Makefile and cd32x/Makefile, which already honour GENDEV).
+TOOLCHAIN="${GENDEV:-/opt/toolchains/sega}"
+TC68="$TOOLCHAIN/m68k-elf/bin/m68k-elf-"
 
 DATA="$HERE/data"
 ROMFS_OPTS=""
@@ -156,7 +159,7 @@ mkdir -p "$HERE/port/mars/obj" && echo "$STAMP" > "$STAMP_FILE"
 
 # The largest functions and what the hot ones cost in RAM (for HOT=1 decisions).
 # Informational only: never stops the build (|| true).
-NM=/opt/toolchains/sega/sh-elf/bin/sh-elf-nm
+NM="$TOOLCHAIN/sh-elf/bin/sh-elf-nm"
 if [ -x "$NM" ]; then
   "$NM" -S --size-sort "$HERE/port/mars/tyrian_sh2.elf" 2>/dev/null | python3 -c '
 import sys
@@ -179,7 +182,7 @@ fi
 # memmove. A small memcpy that looks free can become a library call on the
 # SH2 (it once made layer 1 2.4x slower), and that only shows in the SH2's
 # code. Lists every such call inside the blitters; a warning, not an error.
-OBJDUMP=/opt/toolchains/sega/sh-elf/bin/sh-elf-objdump
+OBJDUMP="$TOOLCHAIN/sh-elf/bin/sh-elf-objdump"
 HOT_OBJS="$HERE/port/mars/obj/game/backgrnd.o $HERE/port/mars/obj/game/sprite.o"
 if [ -x "$OBJDUMP" ] && [ -f "$HERE/port/mars/obj/game/backgrnd.o" ]; then
   HOT_CALLS=$("$OBJDUMP" -dr $HOT_OBJS | awk '

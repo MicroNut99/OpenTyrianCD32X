@@ -1,0 +1,23 @@
+# Build outputs (build.sh, run_host.sh, cd32x/Makefile, tools/)
+/build/
+/frames/
+/TYRIAN32X.32x
+/TYRIAN32X_CD*
+/music_tracks/
+/data/
+host/obj*/
+host/tyrian32x_host*
+port/mars/obj/
+port/mars/*.o
+port/mars/*.elf
+port/mars/*.bin
+port/mars/tyrian.map
+cart/*.o
+cart/*.elf
+cart/cart_md.bin
+cart/cart.map
+cart/cd.bin
+cd32x/build/
+tools/render_music/render_music
+__pycache__/
+*.pyc
