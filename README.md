@@ -57,10 +57,10 @@ texts and the music.
 **Graphics and speed**
 
 - 320 x 200 playfield in 256 colours on the 32X frame buffer
-- Mostly above 20 frames per second in busy levels, up to 30 in lighter
-  scenes, with even frame pacing
+- Mostly 20 frames per second in busy levels, 30 in lighter scenes,
+  with even frame pacing (details in "Frame rate" below)
 - Both SH2s draw, the background stays on screen between frames and only
-  what changed is redrawn (see "How it was made fast" below)
+  what changed is redrawn (see "Frame rate" below)
 
 **Sound and music**
 
@@ -235,37 +235,83 @@ uses them in two ways.
   (`NOWAIT`).
 
 
-## How it was made fast
+## Frame rate: where it stands, and how it got there
 
-The 32X's frame buffer is the limit: about 10 SH2 cycles per 16-bit
-access, because the video chip reads the same memory. Level 1 started at
-about 8 frames per second. In order of the gain:
+### Where it stands
 
-- **Draw straight into the frame buffer** instead of composing in RAM and
-  copying 64 KB each frame; write background tiles once, including
-  colour 0, instead of clearing the screen first.
-- **Write 16 or 32 bits at a time**, never bytes; use the SH2's DMA for
-  whole background lines (18 ms instead of 24).
-- **Keep the 68000 off the cartridge bus**: its command loop runs from
-  RAM, so the SH2s' code and graphics reads from ROM are not held up.
-- **Use the data where it lies**: sprites, tiles and pictures are read
-  from ROM in place; tables are converted at build time; level arrays are
-  cut from one buffer. OpenTyrian needs about 730 KB of RAM; the 32X has
-  256 KB.
-- **Keep the most-used background tiles in RAM**, partly in screen
-  memory that is idle during play.
-- **Keep the background on screen between frames (`DIRTY`)**: scroll with
-  the line table; redraw only the 4-pixel columns that sprites covered;
-  skip the background under solid cloud tiles; switch to a full redraw
-  above 30 % (the partial redraw costs more per pixel).
-- **Let the second SH2 draw** half of each background layer, the sprites
-  and the level's darkening filter; the filter now handles 4 pixels per
-  access (it took 8 ms).
-- **Even frame pacing**: each frame is shown a fixed number of screen
-  refreshes after the last, chosen so 14 of the last 16 frames fit.
+With the release switches (`DIRTY=1 TWO_SH2=1 NOWAIT=1 SPRITEQ=1`) Tyrian runs
+at **20 to 30 frames per second**: mostly above 20 in busy levels, up to 30
+in lighter scenes. Level 1 started at about 8.
 
-Each step was measured with the on-screen profiler, and checked on the
-PC to give exactly the same pictures as before.
+The number moves in steps because of the **frame pacing**. Each frame is
+shown for a whole number of screen refreshes (60 per second), so the speeds
+the game can show are 30, 20 and 15 fps (2, 3 or 4 refreshes). The game picks
+the smallest step that 14 of the last 16 frames fit into (`PACE_KEEP`), and
+never shows a frame for less than 2 refreshes (`MAXFPS=30`): an even speed
+instead of jumping between about 17 and 33. A frame that takes 34 ms still
+shows as 20 fps, so savings only show once the slow frames also get under the
+next step.
+
+**What limits it:** the 32X frame buffer. The SH2 needs about 10 cycles for a
+16-bit access, because the video chip reads the same memory. Tyrian redraws
+a 264 x 184 playfield of 256-colour layers every frame; in busy scenes the
+profiler measured the ground layer at 18-24 ms and the top layer up to 27 ms
+per frame. The game logic, sound and file access are small next to that.
+
+**How to see it:** `FPS=1 ./build.sh` shows a frames-per-second box (Z
+shows or hides it) with the build id under it, so a screenshot says which
+build ran. `PROFILE=1` adds an on-screen panel with the milliseconds per
+layer, sprites, filter, logic and the slave SH2's share (X shows or hides it).
+
+### What was done
+
+| Step | What it does | Measured |
+| --- | --- | --- |
+| **Draw straight into the frame buffer** | no 64 KB copy from a RAM screen each frame; background tiles are written once, colour 0 included, instead of clearing first | the largest single gain |
+| **16/32-bit writes, DMA for lines** | never bytes; whole background lines by the SH2's DMA | lines 24 ms -> 18 ms |
+| **68000 off the cartridge bus** | its command loop runs from Genesis RAM, so the SH2s' reads from ROM are not held up | a large, immediate gain |
+| **Data used where it lies** | sprites, tiles and pictures read from ROM in place; tables converted at build time | OpenTyrian needs ~730 KB of RAM, the 32X has 256 KB |
+| **Tile cache** | the most-used background tiles in RAM, partly in screen memory idle during play | fewer slow ROM reads |
+| **Keep the background (`DIRTY`)** | layer 1 stays in the frame buffer; scrolling moves the line table; only the 4-pixel columns that something covered are redrawn; full redraw above 30 % (`DIRTY_PCT`) | layer 1 writes ~46 % of the pixels it did; attract mode redraws 33 % per frame on average |
+| **COVER** | no layer 1 under solid tiles of layers 2 and 3 (clouds) | scripted level 1: redrawn 32 % -> 25 % |
+| **Second SH2 (`TWO_SH2`)** | the slave SH2 draws half of each background layer and the lower half of the level filter; with `DIRTY` it takes the full redraws, the master the partial ones | |
+| **Sprite queue (`SPRITEQ`)** | the slave draws the sprites while the master runs the game logic | |
+| **No wait for the flip (`NOWAIT`)** | the next frame's logic runs while the flip waits for the V-blank | |
+| **Level filter, 4 pixels per access** | the darkening/tint over the playfield (48,576 byte reads and writes per frame before) | was 8 ms per frame; now 4 pixels per access, the slave takes the lower half |
+| **Odd-address tile lines** | one byte, eleven 16-bit pairs, one byte | 13 accesses instead of 18 per line |
+| **Even pacing (`MAXFPS=30`, `PACE_KEEP`)** | a steady speed instead of jumps | |
+
+Every step was measured with the on-screen profiler, and checked on the PC
+(`host/`) to give exactly the same pictures as before: the scripted game and
+30,000 attract-mode frames. For several changes a deliberately broken version
+was run too, to show the comparison would catch a mistake.
+
+### Tried and not kept
+
+- **Hottest code in SDRAM (`HOT=1`):** frame times about 55 vs 53 ms, layer 1
+  ~20 vs ~20 ms, and it takes ~7 KB from the tile cache. Code fetch is not the
+  limit; frame-buffer writes are.
+- **Tiles from RAM instead of ROM:** no gain, for the same reason.
+- **Partial redraws of up to 70 %:** with 46-61 % redrawn, the partial
+  redraw took 18.6-24 ms against 9.9 ms for the full one (its 4-pixel runs
+  land mostly on odd addresses). The limit went from 70 % to 30 %.
+- **yatssd-style per-tile redraw:** a PC-only cost model counted 1.4 to 2.6
+  times more frame-buffer accesses than the 4-pixel columns, for every cell
+  size from 8 x 7 to whole 24 x 28 tiles (Tyrian's tiles are large, and most
+  of what moves over them is small). Not built.
+- **The slave restoring half the partial redraw (`DIRTY_SPLIT=1`):** switched
+  off while hunting the tile-edge trails (below), which turned out to have a
+  different cause; untested since.
+
+### Next: the ground layer on the Genesis (`VDP_PLANES`, experiment)
+
+The biggest remaining cost is drawing layer 1 at all. `VDP_PLANES=1 ./build.sh`
+puts it on the Genesis VDP's plane B, which scrolls in hardware behind the
+32X picture, so the SH2 only clears the playfield to see-through. Expected:
+20-35 ms less work per frame, about 30 fps in typical play. Level converter,
+plane driver, PC model and the SH2 side are done and checked on the PC; 53
+of the 56 levels fit the Genesis video RAM without streaming. It still has
+to be measured on the console (`docs/VDP_PLANES.md`).
 
 
 ## The tile-edge trails (found and fixed)
