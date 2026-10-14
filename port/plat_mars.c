@@ -1579,6 +1579,8 @@ static void fps_glyph(volatile uint8_t *pix, int x, int y, int ch, int scale, ui
 extern int t32x_fps_on;
 #define FPS_X 2                        /* the box's top left corner on screen */
 #define FPS_BUILD_ROWS 6               /* the build id's lines at the bottom (dirty32x.c: 40 lines marked) */
+#define FPS_BUILD_X (PLAT_PLAYFIELD_W - 2 - 54)   /* the build id's box: the playfield's bottom right corner,
+                                                   left of the right-hand panel (user: not over the graphics) */
 #define FPS_Y 2
 static void fps_draw(volatile uint8_t *pix, const uint16_t *pal)
 {
@@ -1613,9 +1615,9 @@ static void fps_draw(volatile uint8_t *pix, const uint16_t *pal)
 		if (t[c] != ' ')
 			fps_glyph(pix, FPS_X + tx[c], FPS_Y + 1, t[c], 2, (uint8_t)hi);
 
-	/* the build (build.sh's build id) at the bottom of the left column,
+	/* the build (build.sh's build id) in the playfield's bottom right corner,
 	 * 13 characters a line, words kept whole: a glance tells which build runs
-	 * (screen x 2..55, y FPS_BUILD_Y0..183; DIRTY: dirty32x.c marks it) */
+	 * (screen x 208..261, y ..183; DIRTY: dirty32x.c marks it) */
 #ifdef T32X_BUILD_ID
 	const char *id = T32X_BUILD_ID;
 #else
@@ -1651,14 +1653,14 @@ static void fps_draw(volatile uint8_t *pix, const uint16_t *pal)
 	const int y0 = 184 - 2 - rows * 6 - 2;     /* the box's top: rows end above the status bar */
 	for (int y = y0; y < 184; ++y)
 		for (int x = 0; x < 54; ++x)
-			pix[y * PLAT_SCREEN_W + FPS_X + x] = (uint8_t)lo;
+			pix[y * PLAT_SCREEN_W + FPS_BUILD_X + x] = (uint8_t)lo;
 	for (int r = 0; r < rows; ++r)
 		for (int c = 0; lines[r][c]; ++c)
 		{
 			char ch = lines[r][c];
 			if (ch >= 'a' && ch <= 'z')
 				ch = (char)(ch - 'a' + 'A');   /* the 3x5 font has capitals only */
-			fps_glyph(pix, FPS_X + 2 + c * 4, y0 + 2 + r * 6, ch, 1, (uint8_t)hi);
+			fps_glyph(pix, FPS_BUILD_X + 2 + c * 4, y0 + 2 + r * 6, ch, 1, (uint8_t)hi);
 		}
 }
 #define FPS_DRAW(pix, pal) fps_draw(pix, pal)

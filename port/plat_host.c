@@ -773,7 +773,7 @@ static void frame_show(const uint16_t *palette555, unsigned long shown_frame)
 					h = (h ^ pixels[y * pitch + x]) * 16777619u;
 			for (int i = 0; i < 256; ++i)
 				hp = (hp ^ palette555[i]) * 16777619u;
-			fprintf(frame_log, "%lu %08x %08x\n", frame, (unsigned)h, (unsigned)hp);
+			fprintf(frame_log, "%lu %08x %08x %u\n", frame, (unsigned)h, (unsigned)hp, (unsigned)now_ms);   /* + game time, ms */
 			fflush(frame_log);
 		}
 	}

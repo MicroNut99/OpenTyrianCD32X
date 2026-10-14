@@ -158,7 +158,7 @@ if [ "$CD_VOL" != "256" ]; then BUILD_ID="$BUILD_ID V$CD_VOL"; fi
 if [ "${DIRTY_SPLIT:-0}" = "1" ]; then BUILD_ID="$BUILD_ID DSPLIT"; fi
 if [ "$PACE_KEEP" != "14" ]; then BUILD_ID="$BUILD_ID K$PACE_KEEP"; fi
 if [ "$DIRTY_PCT" != "30" ]; then BUILD_ID="$BUILD_ID D$DIRTY_PCT"; fi
-echo "    build id (bottom left with FPS=1, profiler column with PROFILE=1): $BUILD_ID"
+echo "    build id (playfield bottom right with FPS=1, profiler column with PROFILE=1): $BUILD_ID"
 make -C "$HERE/port/mars" -j"${JOBS:-1}" EXTRA_CFLAGS="$EXTRA" BUILD_ID="$BUILD_ID"
 mkdir -p "$HERE/port/mars/obj" && echo "$STAMP" > "$STAMP_FILE"
 

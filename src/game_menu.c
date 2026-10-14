@@ -2348,15 +2348,18 @@ void JE_doShipSpecs(void)
 	 * and doFunkyScreen ties everything together.  Before it was more like
 	 * an oddly designed, unreusable, global sharing hierarchy. */
 
+#ifdef TYRIAN32X
+	// PORT32X: no zoom.  The PC version grows the picture from the middle in
+	// 79 steps, each a full scale and a screen flip; on the 32X that took
+	// several seconds (user, real hardware).  The finished, full-size picture
+	// is drawn once, straight into the screen, and shown.
+	JE_drawShipSpecs(VGAScreen, VGAScreen2);
+	JE_loadPic(VGAScreen2, 1, false);   //reset VGAScreen2, which we clobbered
+	JE_playSampleNum(S_SPRING);
+	JE_showVGA();
+#else
 	//create the image we want
 	JE_drawShipSpecs(game_screen, VGAScreen2);
-#ifdef TYRIAN32X
-	// PORT32X: game_screen is in the frame buffer, where each flip brings the
-	// other buffer: draw the picture into both (the flip shows the unchanged
-	// menu again), so the zoom below finds it after every flip.
-	JE_showVGA();
-	JE_drawShipSpecs(game_screen, VGAScreen2);
-#endif
 
 	//reset VGAScreen2, which we clobbered
 	JE_loadPic(VGAScreen2, 1, false);
@@ -2364,6 +2367,7 @@ void JE_doShipSpecs(void)
 	//draw it
 	JE_playSampleNum(S_SPRING);
 	JE_scaleInPicture(VGAScreen, game_screen);
+#endif
 
 	waitUntilGetInput();
 }

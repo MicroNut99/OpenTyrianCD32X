@@ -712,7 +712,7 @@ void t32x_dirty_frame_end(void)
 	if (t32x_fps_on)
 	{
 		t32x_dirty_mark(PF_X0, 0, 64, 24);   /* with the sound path line (PCM/PWM) */
-		t32x_dirty_mark(PF_X0, 184 - 40, 64, 40);  /* the build id at the bottom (6 lines + border) */
+		t32x_dirty_mark(PF_X0 + 200, 184 - 40, 64, 40);  /* the build id, bottom right of the playfield (screen x 208..261) */
 	}
 #endif
 	if (cur != NULL && !frame_dirty)

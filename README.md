@@ -26,7 +26,8 @@ input and the cartridge/CD hardware.
 - a CD-only game: it boots from a 32X cartridge and uses the Sega CD for
   the level files, the story texts, the music and the sound effects.
 - a 60 fps game: the 32X frame buffer is slow, and Tyrian redraws a full
-  256-colour screen; it runs at 20 to 30 frames per second.
+  256-colour screen. **Tested on real hardware: 12 to 20 frames per
+  second** (emulators show 20 to 30).
 
 
 ## What you need
@@ -103,8 +104,9 @@ Start.
 - **Level Select** is the last item of the title menu: pick an episode,
   a difficulty and any level of that episode. Quit Level in the in-game
   menu returns to the list.
-- `FPS=1` builds: **Z** shows or hides the frames-per-second box and,
-  under it at the bottom left, the build id (time and build switches).
+- `FPS=1` builds: **Z** shows or hides the frames-per-second box (top left)
+  and the build id (time and build switches) in the playfield's bottom right
+  corner, left of the right-hand panel.
 - `PROFILE=1` builds: **X** shows or hides the profiler column
   (milliseconds per part of the frame).
 
@@ -239,9 +241,13 @@ uses them in two ways.
 
 ### Where it stands
 
-With the release switches (`DIRTY=1 TWO_SH2=1 NOWAIT=1 SPRITEQ=1`) Tyrian runs
-at **20 to 30 frames per second**: mostly above 20 in busy levels, up to 30
-in lighter scenes. Level 1 started at about 8.
+**Tested on real hardware (32X + Sega CD): 12 to 20 frames per second.**
+
+In emulators (mainly Fusion), with the release switches (`DIRTY=1 TWO_SH2=1
+NOWAIT=1 SPRITEQ=1`), it shows **20 to 30 frames per second**: mostly above 20
+in busy levels, up to 30 in lighter scenes. Level 1 started at about 8. The
+emulators do not slow the SH2 down for the frame buffer as much as the real
+console does, which is why the hardware runs slower.
 
 The number moves in steps because of the **frame pacing**. Each frame is
 shown for a whole number of screen refreshes (60 per second), so the speeds
@@ -259,8 +265,8 @@ profiler measured the ground layer at 18-24 ms and the top layer up to 27 ms
 per frame. The game logic, sound and file access are small next to that.
 
 **How to see it:** `FPS=1 ./build.sh` shows a frames-per-second box (Z
-shows or hides it) with the build id under it, so a screenshot says which
-build ran. `PROFILE=1` adds an on-screen panel with the milliseconds per
+shows or hides it) and the build id in the playfield's bottom right corner,
+so a screenshot says which build ran. `PROFILE=1` adds an on-screen panel with the milliseconds per
 layer, sprites, filter, logic and the slave SH2's share (X shows or hides it).
 
 ### What was done
@@ -341,8 +347,11 @@ in screenshots.
 - Some help texts still mention PC keys (Enter, F1, Alt-X).
 - Without the Sega CD, the cartridge boots to the title screen, but the
   episodes cannot be started (their level files are on the disc).
-- Tested in emulators (mainly Fusion); behaviour on real hardware may
-  differ.
+- Tested on real hardware at 12 to 20 frames per second, slower than in
+  emulators (20 to 30).
+- **Ship Specs** shows the finished picture at once: the PC version's zoom
+  (the picture growing from the middle, 79 steps of scale + flip) took
+  several seconds on the 32X and is left out.
 
 
 ## Credits
