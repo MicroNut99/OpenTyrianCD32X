@@ -51,6 +51,7 @@ texts and the music.
   An End to Fate
 - One-player full game, one-player arcade, two-player arcade
 - Shop, ship upgrades, data cubes (story texts), high scores
+- **Game saves do not work yet** (Save / Load Game): see Known limitations
 - Attract demos on the title screen
 - Original end credits, plus credits for this port
   (also in Setup > Credits)
@@ -58,7 +59,7 @@ texts and the music.
 **Graphics and speed**
 
 - 320 x 200 playfield in 256 colours on the 32X frame buffer
-- Mostly 20 frames per second in busy levels, 30 in lighter scenes,
+- 12 to 20 frames per second on real hardware (20 to 30 in emulators),
   with even frame pacing (details in "Frame rate" below)
 - Both SH2s draw, the background stays on screen between frames and only
   what changed is redrawn (see "Frame rate" below)
@@ -343,6 +344,8 @@ in screenshots.
 
 ## Known limitations
 
+- **Game saves do not work.** Saving a game and Load Game on the title
+  menu do not keep or bring back a game; play each episode from its start.
 - **The ending animation** at the end of episode 3 is skipped.
 - Some help texts still mention PC keys (Enter, F1, Alt-X).
 - Without the Sega CD, the cartridge boots to the title screen, but the
