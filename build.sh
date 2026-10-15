@@ -48,7 +48,9 @@ fi
   echo "*** Tyrian data not found in $DATA"; echo "    usage: ./build.sh [tyrian data folder] [--with-lvl] [--no-sound]"; exit 1; }
 
 # VDPPLANES (branch vdp-planes): VDP_PLANES=1 ./build.sh puts Tyrian's layer 1
-# on the Genesis plane for the levels in tools/vdp/levels (docs/VDP_PLANES.md)
+# on the Genesis plane for the levels in tools/vdp/levels (docs/VDP_PLANES.md);
+# VDP_PLANES=2 ./build.sh puts layer 2 on plane A as well (GENESIS LEVEL: the
+# Genesis draws the level, the 32X the sprites, layer 3 and the status bar)
 VDP_PLANES="${VDP_PLANES:-0}"
 # TWOSH2 (branch two-sh2): TWO_SH2=1 ./build.sh lets the slave SH2 draw half
 # of every background layer (sound then runs on DMA; docs/TWO_SH2.md)
@@ -98,7 +100,7 @@ PACE_KEEP="${PACE_KEEP:-14}"
 # playfield take the full redraw instead (default 30; was 70, see docs/DIRTY.md)
 DIRTY_PCT="${DIRTY_PCT:-30}"
 if [ "$PACE_KEEP" -lt 8 ] || [ "$PACE_KEEP" -gt 16 ]; then echo "*** PACE_KEEP must be 8..16"; exit 1; fi
-if [ "$VDP_PLANES" = "1" ]; then ROMFS_OPTS="$ROMFS_OPTS --vdp $HERE/tools/vdp/levels"; fi
+if [ "$VDP_PLANES" != "0" ]; then ROMFS_OPTS="$ROMFS_OPTS --vdp $HERE/tools/vdp/levels"; fi
 
 mkdir -p "$HERE/build"
 echo "==> ROM file system ($DATA)"
@@ -123,7 +125,8 @@ HOT="${HOT:-0}"
 EXTRA=""
 if [ "$PROFILE" = "1" ]; then EXTRA="-DT32X_PROFILE"; fi
 if [ "$HOT" = "1" ]; then EXTRA="$EXTRA -DT32X_HOT_IN_SDRAM"; fi
-if [ "$VDP_PLANES" = "1" ]; then EXTRA="$EXTRA -DT32X_VDP_PLANES"; fi
+if [ "$VDP_PLANES" != "0" ]; then EXTRA="$EXTRA -DT32X_VDP_PLANES"; fi
+if [ "$VDP_PLANES" = "2" ]; then EXTRA="$EXTRA -DT32X_VDP_LAYER2"; fi   # GENESIS LEVEL: layer 2 on plane A too
 if [ "$TWO_SH2" = "1" ]; then EXTRA="$EXTRA -DT32X_TWO_SH2"; fi
 if [ "$CD32X" = "1" ]; then EXTRA="$EXTRA -DT32X_CD32X"; fi
 if [ "$DIRTY" = "1" ]; then EXTRA="$EXTRA -DT32X_DIRTY"; fi
@@ -144,6 +147,7 @@ BUILD_ID="32X $(date +%m-%d\ %H:%M)"
 if [ "$PROFILE" = "1" ]; then BUILD_ID="$BUILD_ID PROF"; fi
 if [ "$HOT" = "1" ]; then BUILD_ID="$BUILD_ID HOT"; fi
 if [ "$VDP_PLANES" = "1" ]; then BUILD_ID="$BUILD_ID VDP"; fi
+if [ "$VDP_PLANES" = "2" ]; then BUILD_ID="$BUILD_ID GEN"; fi
 if [ "$TWO_SH2" = "1" ]; then BUILD_ID="$BUILD_ID 2CPU"; fi
 if [ "$CD32X" = "1" ]; then BUILD_ID="$BUILD_ID CD"; fi
 if [ "$DIRTY" = "1" ]; then BUILD_ID="$BUILD_ID DIRTY"; fi

@@ -41,6 +41,14 @@ override CFLAGS += -DT32X_SPRITEQ
 OBJDIR := $(OBJDIR)_sq
 HOST_BIN := $(HOST_BIN)_sq
 endif
+ifneq ($(VDP_PLANES),)
+override CFLAGS += -DT32X_VDP_PLANES
+OBJDIR := $(OBJDIR)_vdp$(VDP_PLANES)
+HOST_BIN := $(HOST_BIN)_vdp$(VDP_PLANES)
+ifeq ($(VDP_PLANES),2)
+override CFLAGS += -DT32X_VDP_LAYER2
+endif
+endif
 ifeq ($(TWO_SH2),1)
 override CFLAGS += -DT32X_TWO_SH2
 OBJDIR := $(OBJDIR)_2cpu

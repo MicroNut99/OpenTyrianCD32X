@@ -222,3 +222,25 @@ comparison easy.
   rows coming in.
 - The 32X's colour 0 is see-through to the Genesis layer; the 32X picture must
   be colour 0 wherever layers 1 and 2 should show.
+
+## `VDP_PLANES=2`: the Genesis draws the whole level (layers 1 and 2)
+
+The user's idea: rip the level graphics apart into Genesis tiles, palettes and
+maps, let the Genesis draw the level, and keep the 32X for what moves.
+`VDP_PLANES=2 ./build.sh` does that for the levels that have a VDP file
+(level 1 so far): layer 1 on plane B, layer 2 on plane A, both scrolled by the
+68000 in the V-blank. The 32X draws only the sprites, shots, explosions,
+layer 3 (it is drawn over the ship) and the status bar. The build id shows
+`GEN`.
+
+- The converted file already held both layers (`vdp_bake.py`); the driver
+  already drove plane A. The only new code is in `draw_background_2`
+  (`T32X_VDP_LAYER2`): work out where layer 2 is instead of drawing it.
+- PC test (`make -C host VDP_PLANES=2`): level 1 lines up with the original
+  renderer frame for frame.
+- **Known artefact:** Tyrian draws the ground enemies under layer 2 (turrets
+  half hidden by the ice and rock of layer 2). The 32X picture is in front of
+  both planes, so those enemies now show whole, with their dark bases as
+  boxes over layer 2. Possible fix: draw ground enemies on the 32X only where
+  layer 2 is see-through (a per-pixel test against layer 2's tiles, costing
+  only the enemies' area), or make them Genesis sprites.

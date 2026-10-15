@@ -697,8 +697,10 @@ void draw_background_1(SDL_Surface *surface)
 		const long row = ((mapYPos - &megaData1.mainmap[0][0]) + 1) / 14;
 		t32x_vdp_y1 = (int32_t)(row * 28 - backPos);
 		t32x_vdp_x1 = 24 * mapXbpPos + 48 - mapXPos;
+#ifndef T32X_VDP_LAYER2
 		t32x_vdp_y2 = -100000;  // plane A unused: layer 2 stays on the 32X (draw_background_2)
 		t32x_vdp_x2 = 0;
+#endif
 		// the 32X playfield becomes colour 0, which the 32X shows see-through:
 		// the planes appear wherever nothing else is drawn this frame
 		clear_area(surface, 24, 0, 288, 184);
@@ -793,6 +795,31 @@ void draw_background_2(SDL_Surface *surface)
 	// is in front of every Genesis plane, so a 32X sprite cannot go between
 	// plane B and plane A. With layer 2 here, the order is the original one.
 	// (First PC test: turrets showed dark boxes with layer 2 on plane A.)
+#ifdef T32X_VDP_LAYER2
+	// GENESIS LEVEL (VDP_PLANES=2): layer 2 is on Genesis plane A too, so the
+	// Genesis draws the whole level and the 32X draws only what moves (sprites,
+	// shots, explosions) plus layer 3 and the status bar. Only work out where
+	// layer 2 is, the same way as layer 1 (draw_background_1). The price: ground
+	// enemies, which Tyrian draws UNDER layer 2, now show over it (the 32X
+	// picture is in front of both planes).
+	if (t32x_vdp_active)
+	{
+		if (background2 != 0)
+		{
+			const int x = smoothies[1] ? mapXPos : mapX2Pos;
+			const int bp = smoothies[1] ? mapXbpPos : mapX2bpPos;
+			const long row = ((mapY2Pos - &megaData2.mainmap[0][0]) + 1) / 14;
+			t32x_vdp_y2 = (int32_t)(row * 28 - backPos2);
+			t32x_vdp_x2 = 24 * bp + 48 - x;
+		}
+		else
+		{
+			t32x_vdp_y2 = -100000;  // no layer 2 now: plane A shows nothing
+			t32x_vdp_x2 = 0;
+		}
+	}
+	else
+#endif
 	if (background2 != 0)
 	{
 		// water effect combines background 1 and 2 by synchronizing the x coordinate
