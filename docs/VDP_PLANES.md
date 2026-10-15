@@ -244,3 +244,18 @@ layer 3 (it is drawn over the ship) and the status bar. The build id shows
   boxes over layer 2. Possible fix: draw ground enemies on the 32X only where
   layer 2 is see-through (a per-pixel test against layer 2's tiles, costing
   only the enemies' area), or make them Genesis sprites.
+
+### First console test (Fusion): the planes covered everything - fixed
+
+The first `VDP_PLANES=2` ROM showed the Genesis planes over the sprites, over
+the left edge of the right-hand panel and in the border lines. Cause: the
+32X's **priority bit** (bit 15 of each colour). With the 32X's PRI setting at 0,
+a 32X pixel whose colour lacks that bit is drawn behind the Genesis picture
+wherever the Genesis is not see-through; Tyrian's palette has no priority bits,
+so every 32X pixel went behind the planes. The earlier assumption ("colour
+0x0000 is see-through") was not the hardware's rule. Fix (`port/vdp32x.c`):
+in plane mode every colour except index 0 gets the priority bit; index 0, the
+cleared playfield, stays behind, so the planes show only there. The PC build's
+composition now follows the console's rule (priority bit, whole screen,
+border lines too): without the fix it reproduces the Fusion screenshot, with
+it the picture matches the original renderer.

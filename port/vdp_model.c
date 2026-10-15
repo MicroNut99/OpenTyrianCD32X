@@ -64,6 +64,12 @@ static int plane_pixel(uint32_t base, uint16_t vscroll, int16_t hscroll, int sx,
 	return c == 0 ? -1 : ((entry >> 13) & 3) * 16 + c;
 }
 
+int vdp_model_opaque(int sx, int sy)
+{
+	return plane_pixel(PLANE_A, vscroll_a, hscroll_a, sx, sy) >= 0 ||
+	       plane_pixel(PLANE_B, vscroll_b, hscroll_b, sx, sy) >= 0;
+}
+
 uint16_t vdp_model_pixel(int sx, int sy)
 {
 	int c = plane_pixel(PLANE_A, vscroll_a, hscroll_a, sx, sy);

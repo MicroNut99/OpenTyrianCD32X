@@ -598,6 +598,10 @@ static void save_frame(const uint8_t *pixels, int pitch, const uint16_t *pal)
 		for (int x = 0; x < W; ++x)
 		{
 			uint8_t idx = (gy >= 0 && gy < PLAT_GAME_H) ? pixels[gy * pitch + x] : 0;
+#ifdef T32X_VDP_PLANES
+			if (!(gy >= 0 && gy < PLAT_GAME_H) && plat_zero_remap >= 0)
+				idx = (uint8_t)plat_zero_remap;   /* the border lines: plat_mars.c present_finish */
+#endif
 			if (raw_index)
 			{
 				*r++ = idx; *r++ = idx; *r++ = idx;
@@ -605,9 +609,11 @@ static void save_frame(const uint8_t *pixels, int pitch, const uint16_t *pal)
 			}
 			uint16_t c = pal[idx];
 #ifdef T32X_VDP_PLANES
-			if (vdp_on && (c & 0x7FFF) == 0 && gy >= 0 && gy < PLAT_PLAYFIELD_H && x < PLAT_PLAYFIELD_W)
+			if (vdp_on && (c & 0x8000) == 0 && vdp_model_opaque(x, gy + VDP_PLAYFIELD_LINE))
 			{
-				/* VDPPLANES: see-through 32X pixel: the Genesis planes behind it */
+				/* VDPPLANES: as the console does it (PRI = 0): a 32X pixel whose
+				 * colour has no priority bit is drawn BEHIND the Genesis planes -
+				 * anywhere on the screen, border lines and panel included */
 				const uint16_t g = vdp_model_pixel(x, gy + VDP_PLAYFIELD_LINE);
 				*r++ = (uint8_t)(((g >> 1) & 7) * 255 / 7);
 				*r++ = (uint8_t)(((g >> 5) & 7) * 255 / 7);

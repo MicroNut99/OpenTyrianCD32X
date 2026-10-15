@@ -71,6 +71,15 @@ int t32x_vdp_fix_cram(uint16_t *cram)
 		}
 	}
 	cram[0] = 0x0000;
+	/* The 32X's priority bit (bit 15 of each colour): with it the 32X pixel
+	 * is in front of the Genesis picture; without it the Genesis planes are
+	 * drawn OVER that pixel wherever they are not see-through. Tyrian's
+	 * palette has no priority bits, so on the console (first test, Fusion)
+	 * the planes covered everything: sprites, the left edge of the right-hand
+	 * panel, the border lines. Every colour but index 0 gets the bit; index 0
+	 * (the cleared playfield) stays behind, so the planes show there. */
+	for (int i = 1; i < 256; ++i)
+		cram[i] |= 0x8000;
 	return darkest;
 }
 
