@@ -108,6 +108,22 @@ bram_scratch:   .space  0x640
 
 """
 
+SUSPEND_OLD = "updates_suspend:\n"
+SUSPEND_NEW = "        .global updates_suspend\nupdates_suspend:\n"
+CDFH_ANCHOR = "extern int init_cd(void);\n"
+CDFH_ADD = """
+/* TYRIAN32X: the sound driver's refill (s_main.c), during disc reads too */
+void S_Update(void);
+extern volatile uint8_t updates_suspend;   /* crt.s: SfxSuspendUpdates */
+"""
+READ_WAIT_OLD = """        while ((r = read((void *)((intptr_t )dest & addr_mask))) == 0) {
+            continue;
+        }"""
+READ_WAIT_NEW = """        while ((r = read((void *)((intptr_t )dest & addr_mask))) == 0) {
+            if (read != dma_cd_sector_pcm && !updates_suspend)
+                S_Update();   /* TYRIAN32X: the PCM buffers keep filling (no stutter while loading) */
+        }"""
+
 
 def main():
     if len(sys.argv) != 3:
@@ -125,6 +141,9 @@ def main():
         sys.exit("*** crt.s already has BramRead")
     crt = crt.replace(TABLE_ANCHOR, TABLE_ANCHOR + TABLE_ADD)
     crt = crt.replace(CODE_ANCHOR, CODE_ADD + CODE_ANCHOR)
+    if crt.count(SUSPEND_OLD) != 1:
+        sys.exit("*** crt.s: updates_suspend is not as expected")
+    crt = crt.replace(SUSPEND_OLD, SUSPEND_NEW)   # cdfh.c reads it (below)
     open(crt_path, "w").write(crt)
 
     # Room for the backup RAM's 1.6 KB: the sample memory fills the Sub-CPU's
@@ -136,6 +155,19 @@ def main():
     if main.count(MEMBANK_OLD) != 1:
         sys.exit("*** s_main.c is not the version this patch knows (S_MEMBANK_SIZE)")
     open(main_path, "w").write(main.replace(MEMBANK_OLD, MEMBANK_NEW))
+    # The sound keeps playing during disc reads: the driver refills the PCM
+    # chip's double buffers only from the command loop's idle wait
+    # (S_Update in crt.s WaitCmd), so during a long ReadSectors (the next
+    # screen's files) the chip looped its last buffer - the menu's select
+    # sound stuttered until the next screen appeared (user, GEN2). The
+    # sector wait now refills too (not for reads into the PCM chip's own
+    # memory, whose bank register the refill uses).
+    cdfh_path = os.path.join(work, "cdfh.c")
+    cdfh = open(cdfh_path).read()
+    if cdfh.count(READ_WAIT_OLD) != 1 or cdfh.count(CDFH_ANCHOR) != 1:
+        sys.exit("*** cdfh.c: the sector read loop is not as expected")
+    cdfh = cdfh.replace(CDFH_ANCHOR, CDFH_ANCHOR + CDFH_ADD).replace(READ_WAIT_OLD, READ_WAIT_NEW)
+    open(cdfh_path, "w").write(cdfh)
     r = subprocess.run(["make", "-C", work], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     print(r.stdout[-3000:])
     if r.returncode != 0 or not os.path.isfile(os.path.join(work, "cd.bin")):

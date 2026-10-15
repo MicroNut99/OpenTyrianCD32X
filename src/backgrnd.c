@@ -565,7 +565,30 @@ static __attribute__((noinline)) void clear_area(SDL_Surface *surface, int x0, i
 	if (x1 > surface->w) x1 = surface->w;
 	if (y1 > surface->h) y1 = surface->h;
 	for (int y = y0; y < y1 && x0 < x1; ++y)
-		memset((Uint8 *)surface->pixels + y * surface->pitch + x0, 0, (size_t)(x1 - x0));
+	{
+		// not memset: on the 32X a lone 0 byte written to the frame buffer
+		// does not land (pixel_pairs.h fb_byte), and newlib's memset ends
+		// with byte writes - the last 8 pixels of the playfield (x 256..263)
+		// kept old pixels: the GENESIS LEVEL's black strip on the right
+		Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x0;
+		Uint8 *const e = p + (x1 - x0);
+		if (((uintptr_t)p & 1) && p < e)
+			fb_byte(p++, 0);
+		if (((uintptr_t)p & 2) && p + 2 <= e)
+		{
+			*(Uint16 *)p = 0;
+			p += 2;
+		}
+		for (; p + 4 <= e; p += 4)
+			*(Uint32 *)p = 0;
+		if (p + 2 <= e)
+		{
+			*(Uint16 *)p = 0;
+			p += 2;
+		}
+		if (p < e)
+			fb_byte(p, 0);
+	}
 }
 #endif
 

@@ -16,6 +16,7 @@
 #include "tyrian2.h"
 #include "config.h"
 #include "drawq32x.h"
+#include "pixel_pairs.h"
 #include <stdbool.h>
 
 #include <stdio.h>
@@ -227,7 +228,7 @@ void t32x_vdp_punch(SDL_Surface *surface)
 					continue;
 				Uint8 *p = pix + y * surface->pitch + x;
 				if (*p != 0 && layer_solid(1, x, y))
-					*p = 0;   /* layer 2 is solid here: plane A shows */
+					fb_byte(p, 0);   /* layer 2 is solid here: plane A shows (a lone 0 byte must go out as a pair to land, pixel_pairs.h) */
 			}
 		}
 }

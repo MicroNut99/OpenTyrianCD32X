@@ -503,7 +503,13 @@ void blit_sprite_dark(SDL_Surface *surface, int x, int y, unsigned int table, un
 			if (pixels >= pixels_ul)
 				return;
 			if (pixels >= pixels_ll)
-				if (!VDP_KEEP_SEE_THROUGH(*pixels)) *pixels = black ? 0x00 : ((*pixels & 0xf0) | ((*pixels & 0x0f) / 2));  // VDPPLANES
+				if (!VDP_KEEP_SEE_THROUGH(*pixels))
+				{
+					if (black)
+						fb_byte(pixels, 0);  // a lone 0 byte must go out as a pair to land in the 32X frame buffer
+					else
+						*pixels = (*pixels & 0xf0) | ((*pixels & 0x0f) / 2);  // VDPPLANES
+				}
 			
 			pixels++;
 			x_offset++;
