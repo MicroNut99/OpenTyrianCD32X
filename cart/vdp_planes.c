@@ -64,28 +64,41 @@ static int ready;
 static uint16_t base_pal[64];    /* the level's palettes as baked (full brightness) */
 static int bright = -1;          /* the brightness now in CRAM */
 
-/* the VRAM cell for the file's cell n (cell 0 and the hole skipped) */
+/* where the file's cells go in VRAM (vdp_planes.h): runs of
+ * { first file cell, first VRAM cell, count } */
+static const uint16_t cell_runs[4][3] = {
+	{    0,    1, 1535 },   /* 0x0020 .. 0xBFFF */
+	{ 1535, 1664,  128 },   /* 0xD000 .. 0xDFFF (behind plane A's map) */
+	{ 1663, 1920,   96 },   /* 0xF000 .. 0xFBFF (behind plane B's map) */
+	{ 1759, 2017,   31 },   /* 0xFC20 .. 0xFFFF (after the scroll table) */
+};
+
+/* the VRAM cell for the file's cell n */
 static uint16_t vram_cell(uint16_t n)
 {
-	n = (uint16_t)(n + CELL_BASE);
-	return n >= VDP_CELL_HOLE ? (uint16_t)(n + 1) : n;
+	int r = 3;
+	while (r > 0 && n < cell_runs[r][0])
+		--r;
+	return (uint16_t)(cell_runs[r][1] + (n - cell_runs[r][0]));
 }
 
 void vdp_planes_cell_bytes(uint32_t off, const uint8_t *bytes, uint32_t n)
 {
-	const uint32_t hole = (uint32_t)(VDP_CELL_HOLE - CELL_BASE) * 32;   /* file byte offset of the hole */
-	if (off < hole)
+	while (n > 0)
 	{
+		const uint16_t cell = (uint16_t)(off >> 5);
+		int r = 3;
+		while (r > 0 && cell < cell_runs[r][0])
+			--r;
+		const uint32_t run_end = (uint32_t)(cell_runs[r][0] + cell_runs[r][2]) * 32;   /* file bytes */
 		uint32_t k = n;
-		if (off + k > hole)
-			k = hole - off;
-		vdp_out_vram_bytes(CELL_BASE * 32 + off, bytes, k);
+		if (off + k > run_end)
+			k = run_end - off;
+		vdp_out_vram_bytes((uint32_t)vram_cell(cell) * 32 + (off & 31), bytes, k);
 		off += k;
 		bytes += k;
 		n -= k;
 	}
-	if (n)
-		vdp_out_vram_bytes(CELL_BASE * 32 + 32 + off, bytes, n);   /* past the hole */
 }
 
 void vdp_planes_brightness(int level)

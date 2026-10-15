@@ -25,12 +25,8 @@
  *   the level runs, so nothing else may change the bank meanwhile (nothing
  *   else in this cartridge uses the window).
  *
- * VRAM LAYOUT (cart/vdp_planes.h)
- *   0x0000  cell 0 (transparent; also the sprite table: one sprite, off screen),
- *           then the level's cells, skipping cell 1760 (0xDC00: the horizontal
- *           scroll table)
- *   0xE000  plane A map (64 x 32)        0xF000  plane B map (64 x 32)
- *   Up to 1790 cells: every level fits (the largest has 1787).
+ * VRAM LAYOUT: cart/vdp_planes.h (plane maps on 8 KB boundaries, cells
+ *   around them; up to 1790 cells: every level fits).
  *
  * TIMING
  *   The SH2 sends command 71 once per frame; the V-blank handler
@@ -108,15 +104,15 @@ static void planes_setup(void)
 {
 	vdp_reg(0, 0x04);    /* no H-interrupt */
 	vdp_reg(1, 0x74);    /* display on, V-interrupt on, DMA allowed, mode 5 */
-	vdp_reg(2, VDP_PLANE_A >> 10);    /* plane A map at 0xE000 */
+	vdp_reg(2, VDP_PLANE_A >> 10);    /* plane A map at 0xC000 (bits 15-13) */
 	vdp_reg(3, 0x34);                 /* window map at 0xD000 (window off: never shown) */
-	vdp_reg(4, VDP_PLANE_B >> 13);    /* plane B map at 0xF000 */
+	vdp_reg(4, VDP_PLANE_B >> 13);    /* plane B map at 0xE000 (bits 15-13) */
 	vdp_reg(5, VDP_SPRITES >> 9);     /* sprite table at 0x0000 = cell 0 (all zero: one sprite, off screen) */
 	vdp_reg(7, 0x00);    /* backdrop: palette 0 colour 0 (black) */
 	vdp_reg(10, 0xFF);
 	vdp_reg(11, 0x00);   /* full-screen horizontal and vertical scroll */
 	vdp_reg(12, 0x81);   /* 40 cells wide, no shadow/highlight */
-	vdp_reg(13, VDP_HSCROLL >> 10);   /* horizontal scroll table at 0xDC00 (the skipped cell) */
+	vdp_reg(13, VDP_HSCROLL >> 10);   /* horizontal scroll table at 0xFC00 (cell 2016, skipped) */
 	vdp_reg(15, 0x02);   /* address step 2 */
 	vdp_reg(16, 0x01);   /* planes 64 x 32 cells */
 	vdp_reg(17, 0x00);   /* no window */

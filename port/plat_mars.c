@@ -1612,6 +1612,8 @@ static void fps_draw(volatile uint8_t *pix, const uint16_t *pal)
 		if (v > hv) { hv = v; hi = i; }
 		if (v < lv) { lv = v; lo = i; }
 	}
+	if (lo == 0 && plat_zero_remap >= 0)
+		lo = plat_zero_remap;                  /* GENESIS LEVEL: colour 0 is see-through - the box would vanish */
 	for (int y = 0; y < 19; ++y)               /* dark box, 54 x 19 */
 		for (int x = 0; x < 54; ++x)
 			pix[(FPS_Y + y) * PLAT_SCREEN_W + FPS_X + x] = (uint8_t)lo;

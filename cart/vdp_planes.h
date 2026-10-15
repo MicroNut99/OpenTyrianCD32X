@@ -19,17 +19,25 @@
 
 /* the driver */
 /* VRAM layout (bytes), shared by the driver, the 68000 side and the PC model.
- * Cells from cell 1 (cell 0 is all transparent and doubles as the sprite
- * table: one sprite, y 0 = off screen); the horizontal scroll table (4 bytes
- * used) sits on cell VDP_CELL_HOLE, which is skipped; the two plane maps fill
- * the top 8 KB. That leaves room for 1790 cells - every level fits. */
-#define VDP_PLANE_A      0xE000
-#define VDP_PLANE_B      0xF000
-#define VDP_HSCROLL      0xDC00
+ * The plane maps must start on 8 KB boundaries (VDP registers 2 and 4 hold
+ * address bits 15-13: the first console test had plane B at 0xF000, which the
+ * VDP read as 0xE000 - plane A's map - so the ground was missing). A 64 x 32
+ * map uses 4 KB of its 8, so cells fill the other halves too:
+ *   0x0000  cell 0 (all transparent; also the sprite table: one sprite, off screen)
+ *   0x0020  cells 1-1535       0xC000 plane A map    0xD000 cells 1664-1791
+ *   0xE000  plane B map        0xF000 cells 1920-2047, except 2016 = 0xFC00,
+ *                              the horizontal scroll table (4 bytes used)
+ * 1790 cells: every level fits (the largest has 1787). The driver maps the
+ * file's cell numbers onto these runs (vdp_planes.c, vram_cell). */
+#define VDP_PLANE_A      0xC000
+#define VDP_PLANE_B      0xE000
+#define VDP_HSCROLL      0xFC00
 #define VDP_SPRITES      0x0000
 #define VDP_CELL_BASE    1
-#define VDP_CELL_HOLE    (VDP_HSCROLL / 32)          /* 1760 */
-#define VDP_MAX_CELLS    (VDP_PLANE_A / 32 - VDP_CELL_BASE - 1)   /* 1790 */
+#define VDP_MAX_CELLS    1790
+#if (VDP_PLANE_A % 0x2000) || (VDP_PLANE_B % 0x2000) || (VDP_HSCROLL % 0x400)
+#error "plane maps need 8 KB alignment, the scroll table 1 KB"
+#endif
 
 /* a VDP level file (tables + cells, or with_cells = 0: tables only, the
  * caller uploads the cells with vdp_planes_cell_bytes); 0 = not one */
