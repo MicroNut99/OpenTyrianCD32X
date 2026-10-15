@@ -177,7 +177,10 @@ unsigned int plat_net_recv(uint8_t *bytes, unsigned int most);   /* bytes waitin
  * through the playfield. */
 extern int plat_zero_remap;
 bool plat_vdp_level(const uint8_t *file);
-void plat_vdp_frame(int32_t y1, int32_t x1, int32_t y2, int32_t x2);
+/* GENESIS LEVEL: the level's VDP file on the disc (the 68000 reads it) */
+bool plat_vdp_level_cd(uint32_t sector, uint32_t length);
+/* bright: 0 (black) .. 16 (full) - the planes follow the 32X's fades */
+void plat_vdp_frame(int32_t y1, int32_t x1, int32_t y2, int32_t x2, int bright);
 void plat_vdp_off(void);
 
 /* TWOSH2 (branch two-sh2, T32X_TWO_SH2): the slave SH2 as a drawing helper.

@@ -1131,16 +1131,35 @@ bool plat_vdp_level(const uint8_t *file)
 	return COMMW(2) == 1;
 }
 
-void plat_vdp_frame(int32_t y1, int32_t x1, int32_t y2, int32_t x2)
+/* GENESIS LEVEL: command 69 - the 68000 reads the level's VDP file from the
+ * disc itself (tables into its RAM, cells into VRAM) */
+#define CMD_VDP_LEVEL_CD 69
+bool plat_vdp_level_cd(uint32_t sector, uint32_t length)
 {
 #ifdef T32X_CD32X
-	(void)y1; (void)x1; (void)y2; (void)x2;
+	(void)sector; (void)length;
+	return false;
+#endif
+	COMMW(2) = (uint16_t)(sector >> 16);
+	COMMW(3) = (uint16_t)sector;
+	COMMW(4) = (uint16_t)(length >> 16);
+	COMMW(5) = (uint16_t)length;
+	if (!send_cmd(CMD_VDP_LEVEL_CD, 4000000UL))   /* up to 80 KB from the disc: well under a second */
+		return false;
+	return COMMW(2) == 1;
+}
+
+void plat_vdp_frame(int32_t y1, int32_t x1, int32_t y2, int32_t x2, int bright)
+{
+#ifdef T32X_CD32X
+	(void)y1; (void)x1; (void)y2; (void)x2; (void)bright;
 	return;
 #endif
-	COMMW(2) = (uint16_t)y1;
+	COMMW(2) = (uint16_t)(y1 < -32768 ? -32768 : y1);
 	COMMW(3) = (uint16_t)x1;
 	COMMW(4) = (uint16_t)(y2 < -32768 ? -32768 : y2);
 	COMMW(5) = (uint16_t)x2;
+	COMMW(6) = (uint16_t)bright;
 	send_cmd(CMD_VDP_FRAME, 40000UL);
 }
 

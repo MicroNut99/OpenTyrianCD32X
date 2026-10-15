@@ -100,7 +100,10 @@ PACE_KEEP="${PACE_KEEP:-14}"
 # playfield take the full redraw instead (default 30; was 70, see docs/DIRTY.md)
 DIRTY_PCT="${DIRTY_PCT:-30}"
 if [ "$PACE_KEEP" -lt 8 ] || [ "$PACE_KEEP" -gt 16 ]; then echo "*** PACE_KEEP must be 8..16"; exit 1; fi
-if [ "$VDP_PLANES" != "0" ]; then ROMFS_OPTS="$ROMFS_OPTS --vdp $HERE/tools/vdp/levels"; fi
+if [ "$VDP_PLANES" = "1" ]; then mkdir -p "$HERE/build/vdp_rom"; cp "$HERE/tools/vdp/levels/VDP1_09.BIN" "$HERE/build/vdp_rom/"; ROMFS_OPTS="$ROMFS_OPTS --vdp $HERE/build/vdp_rom"; fi   # the experiment: level 1 in the cartridge
+# GENESIS LEVEL: VDP_PLANES=2 reads every level's Genesis graphics from the disc
+# (VDPLEVEL.PAK): make the pack, the disc build adds it (--vdp build/vdplevel.pak)
+if [ "$VDP_PLANES" = "2" ]; then mkdir -p "$HERE/build"; python3 "$HERE/tools/vdp/make_vdp_pak.py" "$HERE/tools/vdp/levels" "$HERE/build/vdplevel.pak"; fi
 
 mkdir -p "$HERE/build"
 echo "==> ROM file system ($DATA)"

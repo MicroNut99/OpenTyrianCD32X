@@ -703,8 +703,13 @@ void draw_background_1(SDL_Surface *surface)
 #endif
 		// the 32X playfield becomes colour 0, which the 32X shows see-through:
 		// the planes appear wherever nothing else is drawn this frame
-		clear_area(surface, 24, 0, 288, 184);
-		return;
+		if (!t32x_vdp_need_pixels())
+		{
+			clear_area(surface, 24, 0, 288, 184);
+			return;
+		}
+		// GENESIS LEVEL: an effect reads the background pixels (water, lava,
+		// blur, blending): the 32X draws the layer as well, over the planes
 	}
 #endif
 #ifdef TYRIAN32X
@@ -804,6 +809,7 @@ void draw_background_2(SDL_Surface *surface)
 	// picture is in front of both planes).
 	if (t32x_vdp_active)
 	{
+		// (with an effect that needs the pixels the 32X draws layer 2 as well, below)
 		if (background2 != 0)
 		{
 			const int x = smoothies[1] ? mapXPos : mapX2Pos;
@@ -818,7 +824,7 @@ void draw_background_2(SDL_Surface *surface)
 			t32x_vdp_x2 = 0;
 		}
 	}
-	else
+	if (!t32x_vdp_active || t32x_vdp_need_pixels())
 #endif
 	if (background2 != 0)
 	{
@@ -1256,6 +1262,13 @@ void initialize_starfield(void)
 	}
 }
 
+#ifdef T32X_VDP_LAYER2
+// GENESIS LEVEL: with the layers on the planes the playfield is all colour 0;
+// a star goes only where the layers are see-through, as in the original
+#define STAR_FREE(pos) (p[pos] == 0 && t32x_vdp_star_ok((int)((pos) % surface->pitch), (int)((pos) / surface->pitch)))
+#else
+#define STAR_FREE(pos) (p[pos] == 0)
+#endif
 void update_and_draw_starfield(SDL_Surface* surface, int move_speed)
 {
 	Uint8* p = (Uint8*)surface->pixels;
@@ -1270,7 +1283,7 @@ void update_and_draw_starfield(SDL_Surface* surface, int move_speed)
 		{
 			// DIRTY: the star and its 4 neighbours
 			T32X_DIRTY_RECT(surface, (int)(star->position % surface->pitch) - 1, (int)(star->position / surface->pitch) - 1, 3, 3);
-			if (p[star->position] == 0)
+			if (STAR_FREE(star->position))
 			{
 				p[star->position] = star->color;
 			}
@@ -1278,16 +1291,16 @@ void update_and_draw_starfield(SDL_Surface* surface, int move_speed)
 			// If star is bright enough, draw surrounding pixels
 			if (star->color - 4 >= STARFIELD_HUE)
 			{
-				if (p[star->position + 1] == 0)
+				if (STAR_FREE(star->position + 1))
 					p[star->position + 1] = star->color - 4;
 
-				if (star->position > 0 && p[star->position - 1] == 0)
+				if (star->position > 0 && STAR_FREE(star->position - 1))
 					p[star->position - 1] = star->color - 4;
 
-				if (p[star->position + surface->pitch] == 0)
+				if (STAR_FREE(star->position + surface->pitch))
 					p[star->position + surface->pitch] = star->color - 4;
 
-				if (star->position >= surface->pitch && p[star->position - surface->pitch] == 0)
+				if (star->position >= surface->pitch && STAR_FREE(star->position - surface->pitch))
 					p[star->position - surface->pitch] = star->color - 4;
 			}
 		}

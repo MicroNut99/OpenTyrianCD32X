@@ -18,8 +18,9 @@ static uint16_t cram[64];
 static uint16_t vscroll_a, vscroll_b;
 static int16_t hscroll_a, hscroll_b;
 
-#define PLANE_A 0xC000
-#define PLANE_B 0xE000
+#include "../cart/vdp_planes.h"
+#define PLANE_A VDP_PLANE_A
+#define PLANE_B VDP_PLANE_B
 
 void vdp_out_cram(uint16_t index, const uint16_t *words, int count)
 {

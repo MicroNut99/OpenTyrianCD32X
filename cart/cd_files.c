@@ -59,6 +59,18 @@ void tyr_cd_open(void)
 	COMMW(5) = (uint16_t)sec;
 }
 
+/* GENESIS LEVEL (cart/vdp_genesis.c): one sector of the disc, through the
+ * same 8-sector buffer (read when the sector is not in it) */
+const volatile uint8_t *tyr_cd_sector(int32_t lba)
+{
+	if (buf_first < 0 || lba < buf_first || lba >= buf_first + BUF_BLOCKS)
+	{
+		scd_read_sectors(MCD_BUF, lba, BUF_BLOCKS, 0);
+		buf_first = lba;
+	}
+	return (const volatile uint8_t *)MD_BUF + (uint32_t)(lba - buf_first) * BLOCK;
+}
+
 void tyr_cd_read(void)
 {
 	const int32_t sector = ((int32_t)COMMW(2) << 16) | COMMW(3);

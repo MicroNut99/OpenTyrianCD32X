@@ -10,7 +10,10 @@ Tyrian 32X - the Sega CD disc image (BIN/CUE) for the cartridge (Mode 1).
                (rendered by tools/render_music; the game plays them through
                the 68000, port/audio32x.c)
 
-    python3 tools/make_tyrian_cd.py <folder with track02.wav ... track42.wav> --data <Tyrian data folder> [--out name]
+    python3 tools/make_tyrian_cd.py <folder with track02.wav ... track42.wav> --data <Tyrian data folder> [--vdp build/vdplevel.pak] [--out name]
+
+  --vdp adds VDPLEVEL.PAK, the levels' Genesis graphics for VDP_PLANES=2 builds
+  (build.sh writes it to build/vdplevel.pak); other builds simply ignore it.
 
 The ISO is written here (a minimal ISO 9660: one root directory); the BIN/CUE
 by Kobo's make_mixed_cd.py (copied unchanged from kobo32x_crt/tools).
@@ -92,6 +95,10 @@ def main():
     if "--out" in sys.argv:
         out = sys.argv[sys.argv.index("--out") + 1]
         args = [a for a in args if a != out]
+    vdp_pak = None
+    if "--vdp" in sys.argv:          # GENESIS LEVEL: the levels' Genesis graphics (tools/vdp/make_vdp_pak.py)
+        vdp_pak = sys.argv[sys.argv.index("--vdp") + 1]
+        args = [a for a in args if a != vdp_pak]
     data_dir = None
     if "--data" in sys.argv:
         data_dir = sys.argv[sys.argv.index("--data") + 1]
@@ -117,11 +124,16 @@ def main():
                 if name not in listing:
                     sys.exit("*** %s not found in %s" % (name, data_dir))
                 files[name.upper()] = open(os.path.join(data_dir, listing[name]), "rb").read()
+    if vdp_pak is not None:
+        files["VDPLEVEL.PAK"] = open(vdp_pak, "rb").read()
     iso = out + ".iso"
     open(iso, "wb").write(make_iso(files))
     print("data track: %s (%d files)" % (iso, len(files)))
     subprocess.check_call([sys.executable, os.path.join(here, "make_mixed_cd.py"), iso] + tracks + ["--out", out])
-    os.remove(iso)
+    try:
+        os.remove(iso)
+    except OSError:
+        pass   # a folder that does not allow deleting: the temporary ISO stays
 
 
 if __name__ == "__main__":

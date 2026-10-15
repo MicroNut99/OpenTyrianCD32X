@@ -249,6 +249,9 @@ inline static void blit_enemy(SDL_Surface *surface, unsigned int i, signed int x
 	const unsigned int index = enemy[i].egr[enemy[i].enemycycle - 1] + sprite_offset;
 
 	T32X_PROF(PROF_ENEMIES);  // diagnostic (port/prof.h): the logic so far...
+#ifdef T32X_VDP_LAYER2
+	t32x_vdp_punch_box(x, y);  // GENESIS LEVEL: remembered while ground enemies are drawn
+#endif
 	if (enemy[i].filter != 0)
 		blit_sprite2_filter(surface, x, y, *enemy[i].sprite2s, index, enemy[i].filter);
 	else
@@ -1395,8 +1398,14 @@ level_loop:
 
 	tempMapXOfs = mapXOfs;
 	tempBackMove = backMove;
+#ifdef T32X_VDP_LAYER2
+	t32x_vdp_punch_begin();  // GENESIS LEVEL: ground enemies under layer 2 (vdp32x.c)
+#endif
 	JE_drawEnemy(50);
 	JE_drawEnemy(100);
+#ifdef T32X_VDP_LAYER2
+	t32x_vdp_punch(VGAScreen);
+#endif
 
 	if (enemyOnScreen == 0 || enemyOnScreen == lastEnemyOnScreen)
 	{

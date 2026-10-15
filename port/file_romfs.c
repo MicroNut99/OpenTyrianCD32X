@@ -108,7 +108,8 @@ static bool on_cd(const char *filename)
 	static const char *const names[] = {
 		"tyrian1.lvl", "tyrian2.lvl", "tyrian3.lvl", "tyrian4.lvl",
 		"cubetxt1.dat", "cubetxt2.dat", "cubetxt3.dat", "cubetxt4.dat",
-		"levels1.dat", "levels2.dat", "levels3.dat", "levels4.dat" };
+		"levels1.dat", "levels2.dat", "levels3.dat", "levels4.dat",
+		"vdplevel.pak" };  /* GENESIS LEVEL: the levels' Genesis graphics (VDP_PLANES=2) */
 	for (size_t i = 0; i < sizeof names / sizeof names[0]; ++i)
 		if (strcmp(filename, names[i]) == 0)
 			return true;

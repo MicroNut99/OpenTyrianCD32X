@@ -179,6 +179,8 @@ loop:
         beq.w   c_net_put
         cmpi.b  #67,d1
         beq.w   c_net_get
+        cmpi.b  #69,d1                          | GENESIS LEVEL: a level's VDP file from the disc (cart/vdp_genesis.c)
+        beq.w   c_vdp_level_cd
         cmpi.b  #70,d1                          | VDPPLANES: Genesis plane B (cart/vdp_genesis.c)
         beq.w   c_vdp_level
         cmpi.b  #71,d1
@@ -280,6 +282,9 @@ c_net_get:                                      | COMM2 = most wanted -> COMM2 =
         bra.w   done
 c_vdp_level:                                    | VDPPLANES: COMM4/6 = file offset -> COMM4 = 1 ok
         jsr     tyr_vdp_level
+        bra.w   done
+c_vdp_level_cd:                                 | GENESIS LEVEL: COMM4/6 = sector, COMM8/10 = length -> COMM4 = 1 ok
+        jsr     tyr_vdp_level_cd
         bra.w   done
 c_vdp_frame:                                    | VDPPLANES: COMM4..10 = y1 x1 y2 x2, applied at V-blank
         jsr     tyr_vdp_frame

@@ -259,3 +259,45 @@ cleared playfield, stays behind, so the planes show only there. The PC build's
 composition now follows the console's rule (priority bit, whole screen,
 border lines too): without the fix it reproduces the Fusion screenshot, with
 it the picture matches the original renderer.
+
+## The whole game on the Genesis planes (`VDP_PLANES=2`)
+
+All 62 level sections are converted (`tools/vdp/levels/VDP<e>_<ss>.BIN`, made by
+`vdp_bake.py` with the level palette, palette 5 of `palette.dat`, which every
+level uses: `JE_loadPic(3)` at level start). They go on the disc as one pack,
+`VDPLEVEL.PAK` (`tools/vdp/make_vdp_pak.py`; `build.sh` writes
+`build/vdplevel.pak` for `VDP_PLANES=2`, `make_tyrian_cd.py --vdp` adds it).
+
+- **Loading:** at level start the SH2 finds the level in the pack's index and
+  sends its disc sector (command 69). The 68000 reads it from the disc itself:
+  the tables (at most 23.7 KB) into its RAM, the cells sector by sector straight
+  into VRAM. Without the pack (an old disc) the 32X draws the level as before.
+- **VRAM:** the plane maps moved to 0xE000/0xF000, the sprite table onto the
+  all-zero cell 0, the scroll table onto one skipped cell: 1790 cells, enough
+  for every level (the largest has 1787; before, four levels did not fit).
+- **Fades:** the planes follow the 32X's palette fades (brightness 0..16 with
+  each frame, from the 32X palette against the level's own).
+- **Ground enemies under layer 2** (levels where layer 2 is drawn over them):
+  after they are drawn, their pixels where layer 2 is solid go back to the
+  see-through colour, so plane A shows there - the original order.
+- **Starfield:** a star goes only where both layers are see-through.
+- **Explosions and other blended sprites** over the planes are drawn in their
+  own colours (blending with the see-through colour hid them).
+- **Effects that read the background** (water, lava, blur, blending, the
+  darkening of some levels): while one is on, the 32X draws the layers as
+  before, over the planes.
+
+PC test: every level of every episode through the level select, picture by
+picture against the original renderer (`make -C host VDP_PLANES=2`, the disc
+folder plus `T32X_CD_EXTRA=build` for the pack).
+
+Known: the Genesis colours (3 bits per channel, 60 colours) shift some muted
+greys and browns; shadows that darken the ground are not drawn over the planes.
+
+### Building it
+
+```
+VDP_PLANES=2 DIRTY=1 TWO_SH2=1 NOWAIT=1 SPRITEQ=1 ./build.sh
+python3 tools/make_tyrian_cd.py music_tracks --data data --vdp build/vdplevel.pak --out TYRIAN32X_CD
+```
+The disc with the pack also works with the normal cartridge (it ignores the pack).

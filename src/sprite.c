@@ -239,7 +239,7 @@ void blit_sprite_blend(SDL_Surface *surface, int x, int y, unsigned int table, u
 			if (pixels >= pixels_ul)
 				return;
 			if (pixels >= pixels_ll)
-				if (!VDP_KEEP_SEE_THROUGH(*pixels)) *pixels = (*data & 0xf0) | (((*pixels & 0x0f) + (*data & 0x0f)) / 2);  // VDPPLANES
+				*pixels = VDP_KEEP_SEE_THROUGH(*pixels) ? *data : (Uint8)((*data & 0xf0) | (((*pixels & 0x0f) + (*data & 0x0f)) / 2));  // VDPPLANES: over a plane, the sprite's own colour (blending with 0 hid it)
 			
 			pixels++;
 			x_offset++;
@@ -441,7 +441,7 @@ void blit_sprite_hv_blend(SDL_Surface *surface, int x, int y, unsigned int table
 				if (temp_value > 0xf)
 					temp_value = (temp_value >= 0x1f) ? 0x0 : 0xf;
 				
-				if (!VDP_KEEP_SEE_THROUGH(*pixels)) *pixels = hue | (((*pixels & 0x0f) + temp_value) / 2);  // VDPPLANES
+				*pixels = VDP_KEEP_SEE_THROUGH(*pixels) ? (Uint8)(hue | temp_value) : (Uint8)(hue | (((*pixels & 0x0f) + temp_value) / 2));  // VDPPLANES: over a plane, unblended
 			}
 			
 			pixels++;
@@ -814,7 +814,7 @@ void blit_sprite2_blend(SDL_Surface *surface,  int x, int y, Sprite2_array sprit
 				if (pixels >= pixels_ul)
 					return;
 				if (pixels >= pixels_ll)
-					if (!VDP_KEEP_SEE_THROUGH(*pixels)) *pixels = (((*data & 0x0f) + (*pixels & 0x0f)) / 2) | (*data & 0xf0);  // VDPPLANES
+					*pixels = VDP_KEEP_SEE_THROUGH(*pixels) ? *data : (Uint8)((((*data & 0x0f) + (*pixels & 0x0f)) / 2) | (*data & 0xf0));  // VDPPLANES: over a plane, the sprite's own colour (explosions)
 				
 				++pixels;
 			}

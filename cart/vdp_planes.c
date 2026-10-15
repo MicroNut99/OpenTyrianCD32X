@@ -45,10 +45,10 @@
 #define PAIR_ROWS    7
 #define PAIR_COLS    3
 
-/* VRAM layout (bytes); cells start at cell 1 (cell 0 = all transparent) */
-#define VRAM_PLANE_A 0xC000      /* 64 x 32 x 2 = 4 KB */
-#define VRAM_PLANE_B 0xE000      /* 64 x 32 x 2 = 4 KB */
-#define CELL_BASE    1
+/* VRAM layout: vdp_planes.h */
+#define VRAM_PLANE_A VDP_PLANE_A
+#define VRAM_PLANE_B VDP_PLANE_B
+#define CELL_BASE    VDP_CELL_BASE
 
 typedef struct
 {
@@ -61,6 +61,49 @@ typedef struct
 
 static Layer layer[2];
 static int ready;
+static uint16_t base_pal[64];    /* the level's palettes as baked (full brightness) */
+static int bright = -1;          /* the brightness now in CRAM */
+
+/* the VRAM cell for the file's cell n (cell 0 and the hole skipped) */
+static uint16_t vram_cell(uint16_t n)
+{
+	n = (uint16_t)(n + CELL_BASE);
+	return n >= VDP_CELL_HOLE ? (uint16_t)(n + 1) : n;
+}
+
+void vdp_planes_cell_bytes(uint32_t off, const uint8_t *bytes, uint32_t n)
+{
+	const uint32_t hole = (uint32_t)(VDP_CELL_HOLE - CELL_BASE) * 32;   /* file byte offset of the hole */
+	if (off < hole)
+	{
+		uint32_t k = n;
+		if (off + k > hole)
+			k = hole - off;
+		vdp_out_vram_bytes(CELL_BASE * 32 + off, bytes, k);
+		off += k;
+		bytes += k;
+		n -= k;
+	}
+	if (n)
+		vdp_out_vram_bytes(CELL_BASE * 32 + 32 + off, bytes, n);   /* past the hole */
+}
+
+void vdp_planes_brightness(int level)
+{
+	if (level < 0) level = 0;
+	if (level > 16) level = 16;
+	if (level == bright || !ready)
+		return;
+	bright = level;
+	uint16_t pal[64];
+	for (int i = 0; i < 64; ++i)
+	{
+		const uint16_t c = base_pal[i];
+		const int r = (c >> 1) & 7, g = (c >> 5) & 7, b = (c >> 9) & 7;
+		pal[i] = (uint16_t)((((b * level + 8) >> 4) << 9) | (((g * level + 8) >> 4) << 5) | (((r * level + 8) >> 4) << 1));
+	}
+	vdp_out_cram(0, pal, 64);
+}
 
 static uint16_t rd16(const uint8_t *p)
 {
@@ -80,7 +123,10 @@ static void write_row(Layer *l, int32_t r)
 			const uint16_t pair = rd16(l->map + 2 * ((uint32_t)pr * l->width + (uint32_t)t));
 			const uint8_t *e = l->pairs + 2 * ((uint32_t)pair * (PAIR_ROWS * PAIR_COLS) + (uint32_t)cr * PAIR_COLS);
 			for (int k = 0; k < PAIR_COLS; ++k)
-				entries[c++] = (uint16_t)(rd16(e + 2 * k) + CELL_BASE);  /* flips and palette bits are above the cell number */
+			{
+				const uint16_t w = rd16(e + 2 * k);   /* flips and palette bits are above the cell number */
+				entries[c++] = (uint16_t)((w & 0xF800) | vram_cell(w & 0x07FF));
+			}
 		}
 	}
 	while (c < PLANE_W)
@@ -89,23 +135,28 @@ static void write_row(Layer *l, int32_t r)
 	vdp_out_vram(l->vram + (uint32_t)ring * PLANE_W * 2, entries, PLANE_W);
 }
 
-int vdp_planes_level(const uint8_t *file)
+int vdp_planes_level(const uint8_t *file, int with_cells)
 {
 	ready = 0;
 	if (file[0] != 'V' || file[1] != 'D' || file[2] != 'P' || file[3] != '1')
 		return 0;
 	const uint16_t cells = rd16(file + 4), cells_at = rd16(file + 6);
+	if (cells > VDP_MAX_CELLS)
+		return 0;
 
-	/* palettes: 4 x 16 CRAM words */
-	uint16_t pal[64];
+	/* palettes: 4 x 16 CRAM words, kept for the fades; black until the
+	 * first frame says how bright (the level fades in from black) */
 	for (int i = 0; i < 64; ++i)
-		pal[i] = rd16(file + 8 + 2 * i);
-	vdp_out_cram(0, pal, 64);
+		base_pal[i] = rd16(file + 8 + 2 * i);
+	uint16_t black[64] = { 0 };
+	vdp_out_cram(0, black, 64);
+	bright = 0;
 
-	/* cells: cell 0 = transparent, the level's cells from cell 1 on */
+	/* cells: cell 0 = transparent (and the sprite table), the level's cells from cell 1 on */
 	uint16_t zero[16] = { 0 };
 	vdp_out_vram(0, zero, 16);
-	vdp_out_vram_bytes(CELL_BASE * 32, file + cells_at, (uint32_t)cells * 32);
+	if (with_cells)
+		vdp_planes_cell_bytes(0, file + cells_at, (uint32_t)cells * 32);
 
 	/* the two layers' tables (layer 1 first in the file) */
 	const uint8_t *p = file + 136;

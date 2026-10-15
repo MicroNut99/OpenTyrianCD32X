@@ -26,6 +26,17 @@ extern int32_t t32x_vdp_y2, t32x_vdp_x2;         /* layer 2 (y far off the map: 
 void t32x_vdp_level_start(const char *level_file, int section);
 void t32x_vdp_level_end(void);
 void t32x_vdp_frame(void);                       /* once per frame, before the present */
+/* the background effects that need the layers' pixels (water, lava, blur,
+ * blending, darkening) are on: the 32X draws the layers too, over the planes */
+int t32x_vdp_need_pixels(void);
+#ifdef T32X_VDP_LAYER2
+/* GENESIS LEVEL: ground enemies under layer 2 (tyrian2.c around JE_drawEnemy) */
+struct SDL_Surface;
+void t32x_vdp_punch_begin(void);
+void t32x_vdp_punch_box(int x, int y);   /* a 12 x 14 enemy sprite drawn at x, y */
+void t32x_vdp_punch(struct SDL_Surface *surface);
+int t32x_vdp_star_ok(int x, int y);       /* a starfield star may go at surface x, y */
+#endif
 /* the CRAM about to be shown: other blacks than index 0 must not be see-through;
  * returns the index that replaces 0 outside the playfield (-1: no replacing) */
 int t32x_vdp_fix_cram(uint16_t *cram);

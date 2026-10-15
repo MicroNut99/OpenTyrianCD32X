@@ -401,12 +401,17 @@ bool plat_cd_open(const char *name, uint32_t *sector, uint32_t *length)
 	lower[i] = 0;
 	snprintf(cd_paths[cd_count], sizeof cd_paths[0], "%s/%s", dir, lower);
 	FILE *f = fopen(cd_paths[cd_count], "rb");
+	if (f == NULL && getenv("T32X_CD_EXTRA"))   /* a second folder of the "disc" (e.g. build/ for vdplevel.pak) */
+	{
+		snprintf(cd_paths[cd_count], sizeof cd_paths[0], "%s/%s", getenv("T32X_CD_EXTRA"), lower);
+		f = fopen(cd_paths[cd_count], "rb");
+	}
 	if (f == NULL)
 		return false;
 	fseek(f, 0, SEEK_END);
 	*length = (uint32_t)ftell(f);
 	fclose(f);
-	*sector = (uint32_t)(1000 * (cd_count + 1));
+	*sector = (uint32_t)(100000 * (cd_count + 1));   /* a file's sectors: k * 100000 + n (GENESIS LEVEL: n up to ~1300) */
 	++cd_count;
 	fprintf(stderr, "[host] CD: open %s (frame %lu)\n", name, frame);  /* when the disc is used */
 	return true;
@@ -414,9 +419,10 @@ bool plat_cd_open(const char *name, uint32_t *sector, uint32_t *length)
 
 bool plat_cd_read(uint32_t sector, uint32_t offset, uint32_t bytes, void *dst)
 {
-	const int k = (int)(sector / 1000) - 1;
+	const int k = (int)(sector / 100000) - 1;
 	if (k < 0 || k >= cd_count || offset % 2048 != 0 || bytes > 4096)
 		return false;
+	offset += (sector % 100000) * 2048;   /* a sector inside the file (GENESIS LEVEL: the pack's entries) */
 	FILE *f = fopen(cd_paths[k], "rb");
 	if (f == NULL)
 		return false;
@@ -470,7 +476,7 @@ bool plat_vdp_level(const uint8_t *file)
 {
 #ifdef T32X_VDP_PLANES
 	vdp_model_reset();
-	vdp_on = vdp_planes_level(file);
+	vdp_on = vdp_planes_level(file, 1);
 	return vdp_on != 0;
 #else
 	(void)file;
@@ -478,12 +484,41 @@ bool plat_vdp_level(const uint8_t *file)
 #endif
 }
 
-void plat_vdp_frame(int32_t y1, int32_t x1, int32_t y2, int32_t x2)
+/* GENESIS LEVEL: the file from the PC's "disc" (T32X_CD_DIR), as the 68000
+ * reads it: the tables kept, the cells uploaded on their own */
+bool plat_vdp_level_cd(uint32_t sector, uint32_t length)
 {
 #ifdef T32X_VDP_PLANES
+	static uint8_t *file;
+	free(file);
+	file = malloc(length + 4096);
+	if (file == NULL)
+		return false;
+	memset(file, 0, length + 4096);
+	for (uint32_t off = 0; off < length; off += 2048)
+		plat_cd_read(sector, off, 2048, file + off);   /* the last one may run past the file: zeros */
+	vdp_model_reset();
+	vdp_on = vdp_planes_level(file, 0);
+	if (vdp_on)
+	{
+		const uint32_t cells = (uint32_t)((file[4] << 8) | file[5]), at = (uint32_t)((file[6] << 8) | file[7]);
+		for (uint32_t off = 0; off < cells * 32; off += 2048)   /* in pieces, like the 68000 */
+			vdp_planes_cell_bytes(off, file + at + off, cells * 32 - off < 2048 ? cells * 32 - off : 2048);
+	}
+	return vdp_on != 0;
+#else
+	(void)sector; (void)length;
+	return false;
+#endif
+}
+
+void plat_vdp_frame(int32_t y1, int32_t x1, int32_t y2, int32_t x2, int bright)
+{
+#ifdef T32X_VDP_PLANES
+	vdp_planes_brightness(bright);
 	vdp_planes_frame(y1, x1, y2, x2);
 #else
-	(void)y1; (void)x1; (void)y2; (void)x2;
+	(void)y1; (void)x1; (void)y2; (void)x2; (void)bright;
 #endif
 }
 
